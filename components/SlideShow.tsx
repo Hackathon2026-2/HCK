@@ -12,10 +12,14 @@ interface Slide {
 }
 
 const SLIDES: Slide[] = [
+  // 使用説明（3枚）
   { bg: ["/slides/bg1.png"], svg: "/slides/slide1.svg" },
   { bg: ["/slides/bg2.png"], svg: "/slides/slide2.svg" },
   // slide3 は happy(左)/angry(右) を分割表示
   { bg: ["/slides/bg3.png", "/slides/bg4.png"], svg: "/slides/slide3.svg", split: true },
+  // 終了スライド（2枚）: 技術スタック＆こだわり / 質疑応答 Q&A
+  { bg: ["/slides/ebg1.png"], svg: "/slides/eslide1.svg" },
+  { bg: ["/slides/ebg2.png"], svg: "/slides/eslide2.svg" },
 ];
 
 export function SlideShow({ onDone }: { onDone: () => void }) {
