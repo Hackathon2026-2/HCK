@@ -1,10 +1,10 @@
 "use client";
 
-// YAWARAi フェーズ管理（spec §5）。
-// start → intro → camera → playing → result。
-// camera で許可が取れなければ keyboard 操作にフォールバックして playing へ。
+// YAWARAi フェーズ管理。
+// start(start.png) → intro(start_1.mp4 全画面) → playing(BGM) → result。
+// 「スタート」で動画再生＋音声解錠＋カメラ要求（裏で）、動画終了で playing に移行し BGM 開始。
+// カメラ拒否時は keyboard ←→ にフォールバック（spec §5, §12-5）。
 // 各画面の見た目・AIキャラ・HUD演出は Codex が差し替える前提（暫定UI）。
-// GameCanvas/ゲームループ/検出/スコア計算は spec §16 によりにゃんこ2 の担当。
 
 import { useEffect, useState } from "react";
 import type { GameResult, HudState, InputMode, Phase } from "@/lib/types";
@@ -12,13 +12,8 @@ import { useCamera } from "@/lib/useCamera";
 import { usePlayerX } from "@/lib/usePlayerX";
 import { GameCanvas } from "@/components/GameCanvas";
 import { aiMoodFromAnger, ANGER_START, TIME_LIMIT } from "@/lib/score";
-import {
-  MOOD_LINES,
-  OPENING_LINES,
-  pickLine,
-  resultComment,
-} from "@/lib/messages";
-import { fetchOpening, fetchResultComment } from "@/lib/aiClient";
+import { MOOD_LINES, resultComment } from "@/lib/messages";
+import { fetchResultComment } from "@/lib/aiClient";
 import { useBgm } from "@/lib/useBgm";
 
 const INITIAL_HUD: HudState = {
@@ -33,13 +28,13 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("start");
   const [hud, setHud] = useState<HudState>(INITIAL_HUD);
   const [result, setResult] = useState<GameResult | null>(null);
-  // 開始口上。まずローカル定型文を即表示し、LLM 生成が来たら差し替え（spec §10）。
-  const [opening, setOpening] = useState(() => pickLine(OPENING_LINES));
-  // 結果のAI一言。null の間はローカル定型文を表示。
+  // 結果のAI一言。null の間はローカル定型文を表示（LLM 生成が来たら差し替え / spec §10）。
   const [aiResult, setAiResult] = useState<string | null>(null);
   const { videoRef, status, start, stop } = useCamera();
-  // 怒れるAIのBGM（Codex提供音源）。スタート操作で解錠、プレイ中ループ。
-  const { play: playBgm, stop: stopBgm } = useBgm("/audio/rage-of-the-void.mp3");
+  // 怒れるAIのBGM（Codex提供音源）。スタート操作で解錠、動画後のplayingでループ。
+  const { unlock: unlockBgm, play: playBgm, stop: stopBgm } = useBgm(
+    "/audio/rage-of-the-void.mp3",
+  );
 
   // カメラ拒否時は keyboard へフォールバック（spec §5, §12-5）。
   const inputMode: InputMode = status === "denied" ? "keyboard" : "camera";
@@ -47,22 +42,11 @@ export default function Home() {
   // playerX(0..1) を毎フレーム更新（playing のときだけ稼働）。
   const playerXRef = usePlayerX(phase === "playing", inputMode, videoRef);
 
+  // intro（動画再生中）にカメラを裏で要求し、playing までに準備しておく。start/result で停止。
   useEffect(() => {
-    if (phase === "camera") start();
+    if (phase === "intro") start();
     if (phase === "start" || phase === "result") stop();
   }, [phase, start, stop]);
-
-  // intro に入ったら開始口上を LLM 生成（失敗時はローカル定型文のまま）。
-  useEffect(() => {
-    if (phase !== "intro") return;
-    let alive = true;
-    fetchOpening().then((t) => {
-      if (alive) setOpening(t);
-    });
-    return () => {
-      alive = false;
-    };
-  }, [phase]);
 
   // 結果が出たら AI の一言を LLM 生成（失敗時はローカル定型文を表示）。
   useEffect(() => {
@@ -76,19 +60,69 @@ export default function Home() {
     };
   }, [phase, result]);
 
-  const showVideo = phase === "camera" || phase === "playing";
+  // 動画終了 / スキップ → BGM開始してプレイへ。
+  const goPlaying = () => {
+    playBgm();
+    setPhase("playing");
+  };
+
+  // カメラ映像（ミラー）は intro から playing まで常駐（playing 開始時に確実にストリームを持つ）。
+  const showVideo = phase === "intro" || phase === "playing";
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden bg-black p-8 text-center text-zinc-100">
+      {/* カメラ映像レイヤー（ミラー）。intro 中は動画の裏、playing 中は薄く背景（spec §6） */}
       {showVideo && (
         <video
           ref={videoRef}
           playsInline
           muted
           className={`pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover ${
-            phase === "playing" ? "opacity-20" : "opacity-100"
+            phase === "playing" ? "opacity-20" : "opacity-0"
           }`}
         />
+      )}
+
+      {/* start: start.png を全面背景にしてスタートボタン */}
+      {phase === "start" && (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/start.png"
+            alt="YAWARAi"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="relative z-10 mt-auto mb-16">
+            <button
+              className="rounded-full bg-rose-600 px-10 py-4 text-lg font-bold shadow-lg hover:bg-rose-500"
+              onClick={() => {
+                unlockBgm(); // ユーザー操作中に音声を解錠（spec §12-3）
+                setPhase("intro");
+              }}
+            >
+              スタート
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* intro: start_1.mp4 を全画面再生。終了 or スキップで playing へ */}
+      {phase === "intro" && (
+        <>
+          <video
+            src="/start_1.mp4"
+            autoPlay
+            playsInline
+            onEnded={goPlaying}
+            className="absolute inset-0 z-20 h-full w-full bg-black object-contain"
+          />
+          <button
+            className="absolute bottom-6 right-6 z-30 rounded-full bg-black/60 px-5 py-2 text-sm font-semibold backdrop-blur hover:bg-black/80"
+            onClick={goPlaying}
+          >
+            スキップ ▶
+          </button>
+        </>
       )}
 
       {phase === "playing" && (
@@ -126,56 +160,6 @@ export default function Home() {
         </>
       )}
 
-      {phase === "start" && (
-        <div className="relative z-10 flex flex-col items-center gap-6">
-          <h1 className="text-5xl font-bold tracking-tight">YAWARAi</h1>
-          <p className="max-w-md text-zinc-400">
-            怒ったAIの「硬い言葉」を体で避け、「優しい言葉」を集めて鎮めよう。
-          </p>
-          <button
-            className="rounded-full bg-rose-600 px-8 py-3 font-semibold hover:bg-rose-500"
-            onClick={() => setPhase("intro")}
-          >
-            スタート
-          </button>
-        </div>
-      )}
-
-      {phase === "intro" && (
-        <div className="relative z-10 flex flex-col items-center gap-6">
-          <div className="text-6xl">😡</div>
-          <p className="max-w-md text-lg">「{opening}」</p>
-          <button
-            className="rounded-full bg-zinc-700 px-8 py-3 font-semibold hover:bg-zinc-600"
-            onClick={() => setPhase("camera")}
-          >
-            進む
-          </button>
-        </div>
-      )}
-
-      {phase === "camera" && (
-        <div className="relative z-10 flex flex-col items-center gap-4 rounded-xl bg-black/40 p-6 backdrop-blur-sm">
-          <p className="text-lg">体を左右に動かして「柔」を集めよう</p>
-          <p className="text-sm text-zinc-300">
-            {status === "requesting" && "カメラを準備中…"}
-            {status === "ready" && "カメラOK（体を左右に動かして操作）"}
-            {status === "denied" &&
-              "カメラが使えないため、キーボード（←→）で操作します"}
-          </p>
-          <button
-            className="rounded-full bg-rose-600 px-8 py-3 font-semibold hover:bg-rose-500 disabled:opacity-40"
-            disabled={status === "requesting"}
-            onClick={() => {
-              playBgm(); // ユーザー操作で音声解錠＋BGM開始（spec §12-3）
-              setPhase("playing");
-            }}
-          >
-            ゲーム開始
-          </button>
-        </div>
-      )}
-
       {phase === "result" && result && (
         <div className="relative z-10 flex flex-col items-center gap-4">
           <h2 className="text-3xl font-bold">
@@ -194,7 +178,10 @@ export default function Home() {
           <p className="text-xs text-zinc-500">AIにもやさしくしよう。</p>
           <button
             className="rounded-full bg-rose-600 px-8 py-3 font-semibold hover:bg-rose-500"
-            onClick={() => setPhase("start")}
+            onClick={() => {
+              stopBgm();
+              setPhase("start");
+            }}
           >
             もう一度
           </button>

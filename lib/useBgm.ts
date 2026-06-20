@@ -20,6 +20,25 @@ export function useBgm(src: string) {
     };
   }, [src]);
 
+  // ユーザー操作（ボタンクリック）中に呼んで音声を解錠する。
+  // 後で（動画終了などジェスチャから時間が経った後に）play() を確実に効かせるための仕込み。
+  // 一瞬だけミュート再生→即停止して、要素を「再生許可済み」状態にする。
+  const unlock = useCallback(() => {
+    const audio = ref.current;
+    if (!audio) return;
+    audio.muted = true;
+    audio
+      .play()
+      .then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = false;
+      })
+      .catch(() => {
+        audio.muted = false;
+      });
+  }, []);
+
   // ユーザー操作起点で呼ぶ（先頭から再生）。失敗（自動再生ポリシー等）は握りつぶす。
   const play = useCallback(() => {
     const audio = ref.current;
@@ -35,5 +54,5 @@ export function useBgm(src: string) {
     audio.currentTime = 0;
   }, []);
 
-  return { play, stop };
+  return { unlock, play, stop };
 }
