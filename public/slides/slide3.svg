@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <line x1="960" y1="0" x2="960" y2="1080" stroke="#ffffff" stroke-width="4" opacity="0.3"/>
+
+  <rect x="360" y="150" width="1200" height="250" rx="20" fill="#000000" opacity="0.7"/>
+  <text x="960" y="250" font-size="70" fill="#c084fc" text-anchor="middle" font-family="sans-serif" font-weight="bold">怒りゲージでエンドが変わる</text>
+  <text x="960" y="340" font-size="45" fill="#f8fafc" text-anchor="middle" font-family="sans-serif">柔を集めるとAIは落ち着き、硬に当たりすぎると限界突破する。</text>
+
+  <rect x="560" y="850" width="800" height="40" rx="20" fill="#334155"/>
+  <rect x="560" y="850" width="400" height="40" rx="20" fill="#22d3ee"/>
+  <rect x="960" y="850" width="400" height="40" rx="20" fill="#ef4444"/>
+
+  <text x="480" y="885" font-size="50" fill="#22d3ee" text-anchor="end" font-family="sans-serif" font-weight="bold">← Good End</text>
+  <text x="1440" y="885" font-size="50" fill="#ef4444" text-anchor="start" font-family="sans-serif" font-weight="bold">Bad End →</text>
+
+  <text x="480" y="700" font-size="80" fill="#ffffff" text-anchor="middle" font-family="sans-serif" font-weight="bold">沈静</text>
+  <text x="1440" y="700" font-size="80" fill="#ffffff" text-anchor="middle" font-family="sans-serif" font-weight="bold">暴走</text>
+</svg>

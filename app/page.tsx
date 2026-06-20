@@ -11,6 +11,7 @@ import type { GameResult, HudState, InputMode, Phase } from "@/lib/types";
 import { useCamera } from "@/lib/useCamera";
 import { usePlayerX } from "@/lib/usePlayerX";
 import { GameCanvas } from "@/components/GameCanvas";
+import { SlideShow } from "@/components/SlideShow";
 import { aiMoodFromAnger, ANGER_START, TIME_LIMIT } from "@/lib/score";
 import { MOOD_LINES, resultComment } from "@/lib/messages";
 import { fetchResultComment } from "@/lib/aiClient";
@@ -167,17 +168,20 @@ export default function Home() {
             src={result.cleared ? "/end1.mp4" : "/end2.mp4"}
             autoPlay
             playsInline
-            onEnded={() => setPhase("result")}
+            onEnded={() => setPhase("slides")}
             className="absolute inset-0 z-20 h-full w-full bg-black object-contain"
           />
           <button
             className="absolute bottom-6 right-6 z-30 rounded-full bg-black/60 px-5 py-2 text-sm font-semibold backdrop-blur hover:bg-black/80"
-            onClick={() => setPhase("result")}
+            onClick={() => setPhase("slides")}
           >
             スキップ ▶
           </button>
         </>
       )}
+
+      {/* slides: 終了動画のあとに説明スライド（Codex素材）。最後に結果へ */}
+      {phase === "slides" && <SlideShow onDone={() => setPhase("result")} />}
 
       {phase === "result" && result && (
         <div className="relative z-10 flex flex-col items-center gap-4">

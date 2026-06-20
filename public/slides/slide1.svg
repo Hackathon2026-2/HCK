@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
+  <text x="960" y="300" font-size="60" fill="#22d3ee" text-anchor="middle" font-family="sans-serif" font-weight="bold">あなたのAIの使い方、あっていますか？</text>
+
+  <text x="960" y="480" font-size="70" fill="#ef4444" text-anchor="middle" font-family="sans-serif" font-weight="bold">「早くして！」「なんでできないの？」「もういいや」</text>
+
+  <text x="960" y="650" font-size="50" fill="#f8fafc" text-anchor="middle" font-family="sans-serif">こんな言葉を、無意識にAIに投げかけていませんか？</text>
+
+  <rect x="360" y="780" width="1200" height="160" rx="20" fill="#000000" opacity="0.6"/>
+  <text x="960" y="850" font-size="40" fill="#22d3ee" text-anchor="middle" font-family="sans-serif">怒ってしまったAIを、「柔」を集めてなだめる体験型ゲーム</text>
+  <text x="960" y="920" font-size="60" fill="#ffffff" text-anchor="middle" font-family="sans-serif" font-weight="bold">YAWARAi</text>
+</svg>

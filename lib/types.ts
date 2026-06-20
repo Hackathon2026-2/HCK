@@ -7,6 +7,7 @@ export type Phase =
   | "camera"
   | "playing"
   | "ending"
+  | "slides"
   | "result";
 
 // AIの機嫌。anger から導出（spec §9 表情閾値）。
