@@ -1,13 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080">
-  <rect x="260" y="250" width="1400" height="650" rx="20" fill="#000000" opacity="0.7"/>
-  <text x="960" y="380" font-size="70" fill="#22d3ee" text-anchor="middle" font-family="sans-serif" font-weight="bold">技術スタック ＆ こだわりポイント</text>
+  <rect x="200" y="180" width="1520" height="780" rx="30" fill="#000000" opacity="0.8"/>
+  
+  <g font-family="'Hiragino Kaku Gothic ProN', 'Meiryo', 'Noto Sans JP', sans-serif">
+    <text x="960" y="280" font-size="60" fill="#22d3ee" text-anchor="middle" font-weight="bold">開発体制 ＆ AIフル活用スタック</text>
 
-  <circle cx="450" cy="520" r="20" fill="#22d3ee"/>
-  <text x="500" y="540" font-size="50" fill="#ffffff" text-anchor="start" font-family="sans-serif" font-weight="bold">Webカメラ映像の「差分」による軽量な動き検出</text>
+    <rect x="260" y="340" width="1400" height="180" rx="20" fill="#334155" opacity="0.6"/>
+    <text x="960" y="420" font-size="50" fill="#c084fc" text-anchor="middle" font-weight="bold">「デザイナー × プログラマー」の異業種タッグ</text>
+    <text x="960" y="485" font-size="35" fill="#f8fafc" text-anchor="middle">AI動画を組み込んだ高度なUI設計と、システムのコア開発の同時並行を実現！</text>
 
-  <circle cx="450" cy="650" r="20" fill="#c084fc"/>
-  <text x="500" y="670" font-size="50" fill="#ffffff" text-anchor="start" font-family="sans-serif" font-weight="bold">Claude API を用いた AIの「感情的な口上」生成</text>
+    <text x="960" y="600" font-size="40" fill="#22d3ee" text-anchor="middle" font-weight="bold">5つのAIを適材適所で使い分ける開発フロー</text>
 
-  <circle cx="450" cy="780" r="20" fill="#ef4444"/>
-  <text x="500" y="800" font-size="50" fill="#ffffff" text-anchor="start" font-family="sans-serif" font-weight="bold">怒りゲージと完全連動する動的な難易度カーブ</text>
+    <text x="350" y="700" font-size="35" fill="#ffffff" text-anchor="start" font-weight="bold"><tspan fill="#3b82f6">■</tspan> Claude Code</text>
+    <text x="650" y="700" font-size="30" fill="#cbd5e1" text-anchor="start">... システム開発主軸</text>
+
+    <text x="350" y="780" font-size="35" fill="#ffffff" text-anchor="start" font-weight="bold"><tspan fill="#10b981">■</tspan> GPT-5.5</text>
+    <text x="650" y="780" font-size="30" fill="#cbd5e1" text-anchor="start">... 計画立て・経過観察</text>
+
+    <text x="350" y="860" font-size="35" fill="#ffffff" text-anchor="start" font-weight="bold"><tspan fill="#6366f1">■</tspan> Codex</text>
+    <text x="650" y="860" font-size="30" fill="#cbd5e1" text-anchor="start">... 開発補助・UI実装</text>
+
+    <line x1="1020" y1="650" x2="1020" y2="900" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+
+    <text x="1100" y="740" font-size="35" fill="#ffffff" text-anchor="start" font-weight="bold"><tspan fill="#a855f7">■</tspan> Google Vids</text>
+    <text x="1400" y="740" font-size="30" fill="#cbd5e1" text-anchor="start">... 動画生成（怒るAI等）</text>
+
+    <text x="1100" y="820" font-size="35" fill="#ffffff" text-anchor="start" font-weight="bold"><tspan fill="#f59e0b">■</tspan> Gemini</text>
+    <text x="1400" y="820" font-size="30" fill="#cbd5e1" text-anchor="start">... 画像・SVG UI生成</text>
+  </g>
 </svg>
