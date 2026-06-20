@@ -18,14 +18,14 @@ export interface HudState {
   combo: number;
 }
 
-// 落下アイテム。soft=優しい言葉(回収), hard=硬い言葉(被弾)。
+// 投げられる物体。soft=柔らかい物(回収), hard=硬い物(被弾)。
+// 奥(AI)→手前(プレイヤー)へ z が進むほど大きく・外側へ向かう疑似3D。
 export interface Item {
   id: number;
   kind: "soft" | "hard";
-  x: number; // ピクセル（ゲームcanvas座標）
-  y: number; // ピクセル
-  vy: number; // px/s
-  label: string; // 表示する言葉
+  glyph: string; // 物体の見た目（絵文字）
+  targetX: number; // 着地点の正規化X(0..1)（プレイヤー面）
+  z: number; // 奥行き 0(AI付近)→1(プレイヤー面)
 }
 
 // ゲーム終了時の結果（result 画面・AIコメント生成に渡す）。

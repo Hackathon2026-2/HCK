@@ -16,9 +16,10 @@ export function comboMult(combo: number): number {
   return 1 + Math.floor(combo / 5) * 0.5;
 }
 
-// 落下速度 px/s（怒りが高いほど速い / spec §9）。
-export function fallSpeed(anger: number): number {
-  return 180 + anger * 1.2;
+// 接近速度 z/s（怒りが高いほど速く迫る）。z は 0=奥(AI) → 1=手前(プレイヤー)。
+// anger0 で約2.0秒、anger100 で約1.0秒で到達。
+export function depthSpeed(anger: number): number {
+  return 0.5 + anger * 0.005;
 }
 
 // 出現間隔 ms（怒りが高いほど短い / spec §9）。

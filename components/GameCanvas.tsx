@@ -7,24 +7,30 @@ import {
   aiMoodFromAnger,
   applyHard,
   applySoft,
-  fallSpeed,
+  depthSpeed,
   shinayaka,
   spawnInterval,
   TIME_LIMIT,
   type ScoreState,
 } from "@/lib/score";
-import { spawnItem, ITEM_W } from "@/lib/spawn";
-import { BAND_H, CATCHER_W, isCaught, isOffscreen } from "@/lib/collision";
+import { spawnItem, OBJECT_SIZE } from "@/lib/spawn";
+import { CATCHER_W, hasArrived, isCaught } from "@/lib/collision";
 
 // ゲーム本体（spec §16 ゲームループ=にゃんこ2担当）。
-// 毎フレーム ref を更新して canvas に描画し、HUD は間引いて親へ通知（spec §7）。
-// 終了条件: anger<=0（沈静クリア）/ timeLeft<=0（時間切れ）。
+// 奥のAIが手前へ物体を投げる疑似3D。z=0(AI)→1(プレイヤー)で迫り、大きくなる。
+// HUD は間引いて親へ通知（spec §7）。終了: anger<=0（沈静）/ timeLeft<=0（時間切れ）。
 
-const HUD_INTERVAL_MS = 100; // HUD通知は10回/秒に間引き（spec §7）
+const HUD_INTERVAL_MS = 100;
+
+// 投影パラメータ（画面比率）。
+const HORIZON_Y = 0.2; // AI(奥)の高さ
+const PLAYER_Y = 0.82; // プレイヤー面(手前)の高さ
+const FAR_SCALE = 0.25; // 奥での縮小率
+const AI_SIZE = 96; // AIの基準サイズ(px)
 
 interface GameInternal extends ScoreState {
   items: Item[];
-  timeLeft: number; // 秒
+  timeLeft: number;
   lastSpawnMs: number;
   lastHudMs: number;
   ended: boolean;
@@ -55,7 +61,6 @@ export function GameCanvas({
     resize();
     window.addEventListener("resize", resize);
 
-    // 初期状態。
     const g: GameInternal = {
       score: 0,
       anger: ANGER_START,
@@ -103,7 +108,6 @@ export function GameCanvas({
       const w = canvas.width;
       const h = canvas.height;
 
-      // 残り時間。
       g.timeLeft -= dt;
       if (g.timeLeft <= 0) {
         pushHud(now);
@@ -111,34 +115,33 @@ export function GameCanvas({
         return;
       }
 
-      // スポーン（怒り由来の間隔 / spec §9）。
+      // 投げる間隔（怒り由来 / spec §9）。
       if (now - g.lastSpawnMs >= spawnInterval(g.anger)) {
         g.lastSpawnMs = now;
-        g.items.push(spawnItem(w, g.anger, g.items));
+        g.items.push(spawnItem(g.anger, g.items));
       }
 
-      // 落下（現在の怒りに応じた速度で全体を動かす＝難易度ランプが見える）。
-      const speed = fallSpeed(g.anger);
+      // 接近（怒りが高いほど速く迫る）。
+      const dz = depthSpeed(g.anger) * dt;
       const playerXpx = playerXRef.current * w;
       const survivors: Item[] = [];
       for (const it of g.items) {
-        it.y += speed * dt;
-        if (isCaught(it, playerXpx, h)) {
-          // 回収/被弾を反映（spec §9）。
-          const next = it.kind === "soft" ? applySoft(g) : applyHard(g);
-          g.score = next.score;
-          g.anger = next.anger;
-          g.combo = next.combo;
-          g.soft = next.soft;
-          g.hard = next.hard;
-          continue; // 接触したアイテムは消す
+        it.z += dz;
+        if (hasArrived(it)) {
+          if (isCaught(it, playerXpx, w)) {
+            const next = it.kind === "soft" ? applySoft(g) : applyHard(g);
+            g.score = next.score;
+            g.anger = next.anger;
+            g.combo = next.combo;
+            g.soft = next.soft;
+            g.hard = next.hard;
+          }
+          continue; // 到達した物体は（取れても外しても）消える
         }
-        if (isOffscreen(it, h)) continue; // 取り逃しは消すだけ（ペナルティ無し）
         survivors.push(it);
       }
       g.items = survivors;
 
-      // 沈静クリア。
       if (g.anger <= 0) {
         pushHud(now);
         finish(true);
@@ -156,14 +159,27 @@ export function GameCanvas({
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-    // playerXRef/onHud/onEnd は安定参照前提（マウント毎に1ゲーム）。
+    // 1マウント=1ゲーム。playerXRef/onHud/onEnd は安定参照前提。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" />;
 }
 
-// 1フレーム描画。
+// 奥行き z(0..1) と着地点 targetX から画面座標・拡大率を求める。
+function project(targetX: number, z: number, w: number, h: number) {
+  const horizonY = h * HORIZON_Y;
+  const playerY = h * PLAYER_Y;
+  const originX = w * 0.5; // AIは中央から投げる
+  // 手前ほど加速して見えるよう z を少しイージング。
+  const e = z * z;
+  return {
+    x: originX + (targetX * w - originX) * e,
+    y: horizonY + (playerY - horizonY) * z,
+    scale: FAR_SCALE + (1 - FAR_SCALE) * z,
+  };
+}
+
 function draw(
   ctx: CanvasRenderingContext2D,
   w: number,
@@ -172,34 +188,42 @@ function draw(
   playerXpx: number,
 ) {
   ctx.clearRect(0, 0, w, h);
-
-  // キャッチ帯。
-  const bandTop = h - BAND_H;
-  ctx.fillStyle = "rgba(244, 63, 94, 0.10)";
-  ctx.fillRect(0, bandTop, w, BAND_H);
-
-  // アイテム（soft=エメラルド / hard=赤、言葉付き）。
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "bold 15px sans-serif";
-  for (const it of g.items) {
-    const soft = it.kind === "soft";
-    ctx.fillStyle = soft ? "#10b981" : "#ef4444";
-    roundRect(ctx, it.x - ITEM_W / 2, it.y - 18, ITEM_W, 36, 18);
+
+  // 奥のAI（怒り表情）。
+  const mood = aiMoodFromAnger(g.anger);
+  const aiFace =
+    mood === "angry" ? "😡" : mood === "irritated" ? "😠" : mood === "neutral" ? "😐" : "😌";
+  ctx.font = `${AI_SIZE}px sans-serif`;
+  ctx.fillText(aiFace, w * 0.5, h * HORIZON_Y);
+
+  // 物体（奥→手前。z 昇順で描いて手前を後に＝重なり自然）。
+  const ordered = [...g.items].sort((a, b) => a.z - b.z);
+  for (const it of ordered) {
+    const p = project(it.targetX, it.z, w, h);
+    const size = OBJECT_SIZE * p.scale;
+    // 硬い物にはうっすら赤いオーラ、柔は緑のオーラ（視認性）。
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, size * 0.62, 0, Math.PI * 2);
+    ctx.fillStyle =
+      it.kind === "soft" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.22)";
     ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(it.label, it.x, it.y, ITEM_W - 12);
+    ctx.font = `${size}px sans-serif`;
+    ctx.fillText(it.glyph, p.x, p.y);
   }
 
-  // キャッチャー（aiMood に応じて色相を少し変える程度）。
-  const mood = aiMoodFromAnger(g.anger);
+  // キャッチャー（プレイヤー面）。沈静で水色に。
+  const py = h * PLAYER_Y;
   const x = Math.max(0, Math.min(w - CATCHER_W, playerXpx - CATCHER_W / 2));
   ctx.fillStyle = mood === "calm" ? "#22d3ee" : "#f43f5e";
-  roundRect(ctx, x, bandTop + 24, CATCHER_W, BAND_H - 44, 12);
+  roundRect(ctx, x, py - 14, CATCHER_W, 28, 14);
   ctx.fill();
+  // 手のひら表現。
+  ctx.font = "30px sans-serif";
+  ctx.fillText("🤲", playerXpx, py);
 }
 
-// 角丸矩形ヘルパー。
 function roundRect(
   ctx: CanvasRenderingContext2D,
   x: number,
