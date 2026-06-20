@@ -18,6 +18,7 @@ import {
   pickLine,
   resultComment,
 } from "@/lib/messages";
+import { fetchOpening, fetchResultComment } from "@/lib/aiClient";
 
 const INITIAL_HUD: HudState = {
   score: 0,
@@ -31,8 +32,10 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("start");
   const [hud, setHud] = useState<HudState>(INITIAL_HUD);
   const [result, setResult] = useState<GameResult | null>(null);
-  // 開始口上は一度だけ抽選（再描画でぶれない）。
-  const [opening] = useState(() => pickLine(OPENING_LINES));
+  // 開始口上。まずローカル定型文を即表示し、LLM 生成が来たら差し替え（spec §10）。
+  const [opening, setOpening] = useState(() => pickLine(OPENING_LINES));
+  // 結果のAI一言。null の間はローカル定型文を表示。
+  const [aiResult, setAiResult] = useState<string | null>(null);
   const { videoRef, status, start, stop } = useCamera();
 
   // カメラ拒否時は keyboard へフォールバック（spec §5, §12-5）。
@@ -45,6 +48,30 @@ export default function Home() {
     if (phase === "camera") start();
     if (phase === "start" || phase === "result") stop();
   }, [phase, start, stop]);
+
+  // intro に入ったら開始口上を LLM 生成（失敗時はローカル定型文のまま）。
+  useEffect(() => {
+    if (phase !== "intro") return;
+    let alive = true;
+    fetchOpening().then((t) => {
+      if (alive) setOpening(t);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [phase]);
+
+  // 結果が出たら AI の一言を LLM 生成（失敗時はローカル定型文を表示）。
+  useEffect(() => {
+    if (phase !== "result" || !result) return;
+    let alive = true;
+    fetchResultComment(result).then((t) => {
+      if (alive) setAiResult(t);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [phase, result]);
 
   const showVideo = phase === "camera" || phase === "playing";
 
@@ -67,6 +94,7 @@ export default function Home() {
             playerXRef={playerXRef}
             onHud={setHud}
             onEnd={(r) => {
+              setAiResult(null); // 前回のコメントを消す
               setResult(r);
               setPhase("result");
             }}
@@ -152,9 +180,9 @@ export default function Home() {
           <p className="text-sm text-zinc-400">
             回収 {result.soft} / 被弾 {result.hard}
           </p>
-          {/* AIからの一言（定型文。S6 で LLM 生成に差し替え・失敗時はこれにフォールバック） */}
+          {/* AIからの一言（LLM生成。来るまではローカル定型文・失敗時もこれ / spec §10） */}
           <p className="max-w-sm text-base text-zinc-200">
-            「{resultComment(result.cleared, result.shinayaka)}」
+            「{aiResult ?? resultComment(result.cleared, result.shinayaka)}」
           </p>
           <p className="text-xs text-zinc-500">AIにもやさしくしよう。</p>
           <button
