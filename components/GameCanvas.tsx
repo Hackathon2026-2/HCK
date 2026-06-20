@@ -61,6 +61,16 @@ export function GameCanvas({
     resize();
     window.addEventListener("resize", resize);
 
+    // 効果音（クライアントのみ生成）。柔回収/硬被弾の瞬間に鳴らす。
+    const softSfx = new Audio("/audio/soft.mp3");
+    const hardSfx = new Audio("/audio/hard.mp3");
+    softSfx.volume = 0.8;
+    hardSfx.volume = 0.8;
+    const playSfx = (a: HTMLAudioElement) => {
+      a.currentTime = 0;
+      a.play().catch(() => {});
+    };
+
     const g: GameInternal = {
       score: 0,
       anger: ANGER_START,
@@ -129,7 +139,9 @@ export function GameCanvas({
         it.z += dz;
         if (hasArrived(it)) {
           if (isCaught(it, playerXpx, w)) {
-            const next = it.kind === "soft" ? applySoft(g) : applyHard(g);
+            const soft = it.kind === "soft";
+            playSfx(soft ? softSfx : hardSfx); // 効果音
+            const next = soft ? applySoft(g) : applyHard(g);
             g.score = next.score;
             g.anger = next.anger;
             g.combo = next.combo;
