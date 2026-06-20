@@ -75,19 +75,19 @@ interface GameRef { playerX:number; items:Item[]; lastSpawnMs:number; running:bo
 - 公平性: 同一x・近接yに soft と hard を同時生成しない（避けられない配置を作らない）。
 
 ## 10. AI活用（審査基準「AI活用度」を稼ぐ）
-- 動的セリフ（推奨・キー疎通できる場合）: LLM で「開始の怒り口上」と「結果の個別コメント（しなやか度・回収数・被弾から）」を生成。`app/api/ai/route.ts`（サーバー）でキーを秘匿して呼ぶ。**毎フレーム呼ばない**。開始時と結果時のみ非同期。
+- 動的セリフ（採用・Anthropic Claude API を使用）: LLM で「開始の怒り口上」と「結果の個別コメント（しなやか度・回収数・被弾から）」を生成。`app/api/ai/route.ts`（サーバー、Node ランタイム）から `@anthropic-ai/sdk` で呼び、キーを秘匿する。モデルは `claude-haiku-4-5-20251001`（短いセリフ生成に十分・速い・安い）。**毎フレーム呼ばない**。開始時と結果時のみ非同期。
 - 音声: ElevenLabs で上記セリフ＋固定の節目セリフ（怒り/エスカレート/沈静）。実行時TTS依存を避けるなら固定セリフは事前生成して `public/audio/` に置き、閾値で再生。結果コメントは画面テキストのみでも可。
 - 音楽: Suno の BGM（怒り用・静用の2系統）を事前生成 → ファイル再生。
-- フォールバック（キー間に合わず）: セリフは怒り段階別の定型文プールから選択。ElevenLabs音声＋Suno音楽で AI活用 は担保される。
+- フォールバック（万一APIが落ちた時の保険）: セリフを怒り段階別の定型文プールから選択。ElevenLabs音声＋Suno音楽で AI活用 は担保される。
 
 ## 11. 技術スタック / ディレクトリ / API
 - Next.js(App Router)+TypeScript+Tailwind、Vercel、getUserMedia、Web Audio、Canvas。
-- `app/page.tsx`（フェーズ管理）, `app/api/ai/route.ts`（口上/結果生成→任意でElevenLabs）, `components/`（各画面・AIキャラ・HUD・GameCanvas）, `lib/`（detection / collision / spawn / score / types）, `public/audio/`（Suno/ElevenLabs音源）。
-- APIキーは `.env.local` ＋ Vercel 環境変数。`.gitignore` に `.env*`。コミット禁止。
+- `app/page.tsx`（フェーズ管理）, `app/api/ai/route.ts`（`@anthropic-ai/sdk` で Claude を呼び口上/結果生成 → 任意で ElevenLabs）, `components/`（各画面・AIキャラ・HUD・GameCanvas）, `lib/`（detection / collision / spawn / score / types）, `public/audio/`（Suno/ElevenLabs音源）。
+- LLM: Anthropic Claude API。`npm i @anthropic-ai/sdk`。キーは `.env.local` の `ANTHROPIC_API_KEY=...`、本番は Vercel 環境変数に同じものを設定。`.gitignore` に `.env*`。クライアントから直接呼ばず必ずサーバー（API ルート）経由。コミット禁止。
 
 ## 12. 技術的リスクと回避策（要対応順）
 1. 動き検出の不安定さ → 縮小canvas差分＋EMA平滑化＋開始1〜2秒キャリブレーション、3レーン/keyboard/mouse へ多段フォールバック。
-2. APIキー未確定 → プロバイダ確定＋疎通を最優先。間に合わなければ定型文＋ElevenLabs。LLMは開始/結果のみ非同期。
+2. AI呼び出しの遅延・失敗 → Claude API は開始/結果のみ非同期で呼ぶ（毎フレーム呼ばない）。タイムアウトや失敗時は定型文プールへフォールバック。キーは疎通確認済み前提。
 3. 音の自動再生ブロック → 必ずスタートボタン操作で解錠（`AudioContext.resume()`）。
 4. React再描画でカクつく → ループは canvas＋ref、React state は phase＋HUD（間引き更新）。
 5. カメラ拒否・他端末 → 拒否時フォールバック、操作は「柔を集め硬を避ける」だけで説明不要に（審査員が自分で触っても成立）。
