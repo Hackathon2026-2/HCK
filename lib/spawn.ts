@@ -27,10 +27,10 @@ export function spawnItem(
   rng: () => number = Math.random,
 ): Item {
   const kind = pickKind(anger, rng);
-  // 端に寄りすぎないよう 0.1..0.9 に収める。
+  // 着地点は中央寄り 0.3..0.7 に収める（端まで投げると特にカメラ操作で届きにくい）。
   let targetX = 0.5;
   for (let attempt = 0; attempt < 5; attempt++) {
-    targetX = 0.1 + rng() * 0.8;
+    targetX = 0.3 + rng() * 0.4;
     const unfair = items.some(
       (it) =>
         it.z < NEAR_Z &&

@@ -28,8 +28,9 @@ export function spawnInterval(anger: number): number {
 }
 
 // 硬の出現率 0..1（怒りが高いほど硬が多い / spec §9）。
+// 緑(柔)を少し増やすため base/slope を下げ気味に（怒り0で硬30%、怒り100で硬65%）。
 export function hardRatio(anger: number): number {
-  return 0.35 + 0.4 * (anger / 100);
+  return 0.3 + 0.35 * (anger / 100);
 }
 
 // しなやか度%（soft=回収数, hard=被弾数 / spec §9）。
