@@ -206,8 +206,8 @@ function draw(
     // 硬い物にはうっすら赤いオーラ、柔は緑のオーラ（視認性）。
     ctx.beginPath();
     ctx.arc(p.x, p.y, size * 0.62, 0, Math.PI * 2);
-    ctx.fillStyle =
-      it.kind === "soft" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.22)";
+    // 色は最大濃度（不透明）。soft=エメラルド / hard=赤。
+    ctx.fillStyle = it.kind === "soft" ? "rgb(16,185,129)" : "rgb(239,68,68)";
     ctx.fill();
     ctx.font = `${size}px sans-serif`;
     ctx.fillText(it.glyph, p.x, p.y);

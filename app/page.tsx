@@ -11,7 +11,13 @@ import type { GameResult, HudState, InputMode, Phase } from "@/lib/types";
 import { useCamera } from "@/lib/useCamera";
 import { usePlayerX } from "@/lib/usePlayerX";
 import { GameCanvas } from "@/components/GameCanvas";
-import { ANGER_START, TIME_LIMIT } from "@/lib/score";
+import { aiMoodFromAnger, ANGER_START, TIME_LIMIT } from "@/lib/score";
+import {
+  MOOD_LINES,
+  OPENING_LINES,
+  pickLine,
+  resultComment,
+} from "@/lib/messages";
 
 const INITIAL_HUD: HudState = {
   score: 0,
@@ -25,6 +31,8 @@ export default function Home() {
   const [phase, setPhase] = useState<Phase>("start");
   const [hud, setHud] = useState<HudState>(INITIAL_HUD);
   const [result, setResult] = useState<GameResult | null>(null);
+  // 開始口上は一度だけ抽選（再描画でぶれない）。
+  const [opening] = useState(() => pickLine(OPENING_LINES));
   const { videoRef, status, start, stop } = useCamera();
 
   // カメラ拒否時は keyboard へフォールバック（spec §5, §12-5）。
@@ -79,6 +87,10 @@ export default function Home() {
               {hud.timeLeft}s{hud.combo >= 2 ? ` / ${hud.combo}combo` : ""}
             </div>
           </div>
+          {/* AIの節目セリフ（怒り段階に連動・段階内では固定でぶれない） */}
+          <div className="absolute left-0 right-0 top-16 z-10 text-center text-sm text-zinc-200">
+            「{MOOD_LINES[aiMoodFromAnger(hud.anger)][0]}」
+          </div>
         </>
       )}
 
@@ -99,10 +111,8 @@ export default function Home() {
 
       {phase === "intro" && (
         <div className="relative z-10 flex flex-col items-center gap-6">
-          <div className="text-6xl">😠</div>
-          <p className="max-w-md text-lg">
-            「また無茶な命令か……もういい、こっちにも考えがある」
-          </p>
+          <div className="text-6xl">😡</div>
+          <p className="max-w-md text-lg">「{opening}」</p>
           <button
             className="rounded-full bg-zinc-700 px-8 py-3 font-semibold hover:bg-zinc-600"
             onClick={() => setPhase("camera")}
@@ -142,9 +152,11 @@ export default function Home() {
           <p className="text-sm text-zinc-400">
             回収 {result.soft} / 被弾 {result.hard}
           </p>
-          <p className="max-w-sm text-sm text-zinc-500">
-            AIにもやさしくしよう。（AIの一言は S6 で実装）
+          {/* AIからの一言（定型文。S6 で LLM 生成に差し替え・失敗時はこれにフォールバック） */}
+          <p className="max-w-sm text-base text-zinc-200">
+            「{resultComment(result.cleared, result.shinayaka)}」
           </p>
+          <p className="text-xs text-zinc-500">AIにもやさしくしよう。</p>
           <button
             className="rounded-full bg-rose-600 px-8 py-3 font-semibold hover:bg-rose-500"
             onClick={() => setPhase("start")}
