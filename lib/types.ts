@@ -28,6 +28,15 @@ export interface Item {
   label: string; // 表示する言葉
 }
 
+// ゲーム終了時の結果（result 画面・AIコメント生成に渡す）。
+export interface GameResult {
+  score: number;
+  shinayaka: number; // %
+  soft: number; // 回収数
+  hard: number; // 被弾数
+  cleared: boolean; // true=怒り沈静でクリア / false=時間切れ
+}
+
 // 毎フレーム更新する可変状態（再描画しないので ref に置く）。
 export interface GameRef {
   playerX: number; // 0..1（正規化された横位置）
