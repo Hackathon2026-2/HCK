@@ -48,9 +48,9 @@ export default function Home() {
     if (phase === "start" || phase === "result") stop();
   }, [phase, start, stop]);
 
-  // 結果が出たら AI の一言を LLM 生成（失敗時はローカル定型文を表示）。
+  // 結果が出たら AI の一言を LLM 生成（終了動画の再生中に先に取りに行き、結果画面で間に合わせる）。
   useEffect(() => {
-    if (phase !== "result" || !result) return;
+    if ((phase !== "ending" && phase !== "result") || !result) return;
     let alive = true;
     fetchResultComment(result).then((t) => {
       if (alive) setAiResult(t);
@@ -134,7 +134,7 @@ export default function Home() {
               stopBgm(); // 終了でBGM停止
               setAiResult(null); // 前回のコメントを消す
               setResult(r);
-              setPhase("result");
+              setPhase("ending"); // 結果に応じた終了動画へ
             }}
           />
           {/* 暫定HUD（spec §6 / 見た目は Codex 差し替え前提） */}
@@ -157,6 +157,25 @@ export default function Home() {
           <div className="absolute left-0 right-0 top-16 z-10 text-center text-sm text-zinc-200">
             「{MOOD_LINES[aiMoodFromAnger(hud.anger)][0]}」
           </div>
+        </>
+      )}
+
+      {/* ending: 怒り0で沈静=end1.mp4 / 時間切れ=end2.mp4。終了 or スキップで結果へ */}
+      {phase === "ending" && result && (
+        <>
+          <video
+            src={result.cleared ? "/end1.mp4" : "/end2.mp4"}
+            autoPlay
+            playsInline
+            onEnded={() => setPhase("result")}
+            className="absolute inset-0 z-20 h-full w-full bg-black object-contain"
+          />
+          <button
+            className="absolute bottom-6 right-6 z-30 rounded-full bg-black/60 px-5 py-2 text-sm font-semibold backdrop-blur hover:bg-black/80"
+            onClick={() => setPhase("result")}
+          >
+            スキップ ▶
+          </button>
         </>
       )}
 

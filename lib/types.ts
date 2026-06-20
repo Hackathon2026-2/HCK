@@ -1,7 +1,13 @@
 // YAWARAi の中核型（spec §7）。
 // 毎フレーム更新するものは GameRef（ref管理・再描画しない）、画面/HUD は React state に分ける。
 
-export type Phase = "start" | "intro" | "camera" | "playing" | "result";
+export type Phase =
+  | "start"
+  | "intro"
+  | "camera"
+  | "playing"
+  | "ending"
+  | "result";
 
 // AIの機嫌。anger から導出（spec §9 表情閾値）。
 export type AiMood = "angry" | "irritated" | "neutral" | "calm";
