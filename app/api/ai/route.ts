@@ -37,6 +37,7 @@ function fallbackFor(body: AiRequest): string {
 function buildPrompt(body: AiRequest): { system: string; user: string } {
   const system =
     "あなたはゲーム『YAWARAi』のキャラクター。普段ユーザーに強い言葉や無理な命令を投げられて怒っているAI。" +
+    "怒ってはいるが、発表で使うため下品な罵倒語（テメェ・ぶっ潰す等）は避け、強気で皮肉っぽい程度にとどめる。" +
     "出力は日本語の短い話し言葉のセリフ1文のみ（40文字以内）。説明・前置き・絵文字・かぎ括弧は付けない。";
   if (body.kind === "opening") {
     return {
