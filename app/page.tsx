@@ -19,6 +19,7 @@ import {
   resultComment,
 } from "@/lib/messages";
 import { fetchOpening, fetchResultComment } from "@/lib/aiClient";
+import { useBgm } from "@/lib/useBgm";
 
 const INITIAL_HUD: HudState = {
   score: 0,
@@ -37,6 +38,8 @@ export default function Home() {
   // 結果のAI一言。null の間はローカル定型文を表示。
   const [aiResult, setAiResult] = useState<string | null>(null);
   const { videoRef, status, start, stop } = useCamera();
+  // 怒れるAIのBGM（Codex提供音源）。スタート操作で解錠、プレイ中ループ。
+  const { play: playBgm, stop: stopBgm } = useBgm("/audio/rage-of-the-void.mp3");
 
   // カメラ拒否時は keyboard へフォールバック（spec §5, §12-5）。
   const inputMode: InputMode = status === "denied" ? "keyboard" : "camera";
@@ -94,6 +97,7 @@ export default function Home() {
             playerXRef={playerXRef}
             onHud={setHud}
             onEnd={(r) => {
+              stopBgm(); // 終了でBGM停止
               setAiResult(null); // 前回のコメントを消す
               setResult(r);
               setPhase("result");
@@ -162,7 +166,10 @@ export default function Home() {
           <button
             className="rounded-full bg-rose-600 px-8 py-3 font-semibold hover:bg-rose-500 disabled:opacity-40"
             disabled={status === "requesting"}
-            onClick={() => setPhase("playing")}
+            onClick={() => {
+              playBgm(); // ユーザー操作で音声解錠＋BGM開始（spec §12-3）
+              setPhase("playing");
+            }}
           >
             ゲーム開始
           </button>
