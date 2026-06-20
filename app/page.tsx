@@ -11,7 +11,11 @@ import type { GameResult, HudState, InputMode, Phase } from "@/lib/types";
 import { useCamera } from "@/lib/useCamera";
 import { usePlayerX } from "@/lib/usePlayerX";
 import { GameCanvas } from "@/components/GameCanvas";
-import { SlideShow } from "@/components/SlideShow";
+import {
+  SlideShow,
+  TUTORIAL_SLIDES,
+  ENDING_SLIDES,
+} from "@/components/SlideShow";
 import { aiMoodFromAnger, ANGER_START, TIME_LIMIT } from "@/lib/score";
 import { MOOD_LINES, resultComment } from "@/lib/messages";
 import { fetchResultComment } from "@/lib/aiClient";
@@ -43,7 +47,7 @@ export default function Home() {
   // playerX(0..1) を毎フレーム更新（playing のときだけ稼働）。
   const playerXRef = usePlayerX(phase === "playing", inputMode, videoRef);
 
-  // intro（動画再生中）にカメラを裏で要求し、playing までに準備しておく。start/result で停止。
+  // intro（動画再生中）にカメラを裏で要求し、説明スライドを挟んで playing までに準備。start/result で停止。
   useEffect(() => {
     if (phase === "intro") start();
     if (phase === "start" || phase === "result") stop();
@@ -67,8 +71,9 @@ export default function Home() {
     setPhase("playing");
   };
 
-  // カメラ映像（ミラー）は intro から playing まで常駐（playing 開始時に確実にストリームを持つ）。
-  const showVideo = phase === "intro" || phase === "playing";
+  // カメラ映像（ミラー）は intro→説明スライド→playing まで常駐（playing 開始時に確実にストリームを持つ）。
+  const showVideo =
+    phase === "intro" || phase === "tutorial" || phase === "playing";
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden bg-black p-8 text-center text-zinc-100">
@@ -114,16 +119,25 @@ export default function Home() {
             src="/start_1.mp4"
             autoPlay
             playsInline
-            onEnded={goPlaying}
+            onEnded={() => setPhase("tutorial")}
             className="absolute inset-0 z-20 h-full w-full bg-black object-contain"
           />
           <button
             className="absolute bottom-6 right-6 z-30 rounded-full bg-black/60 px-5 py-2 text-sm font-semibold backdrop-blur hover:bg-black/80"
-            onClick={goPlaying}
+            onClick={() => setPhase("tutorial")}
           >
             スキップ ▶
           </button>
         </>
+      )}
+
+      {/* tutorial: 導入動画のあとに使用説明スライド3枚 → ゲームへ（ここでBGM開始） */}
+      {phase === "tutorial" && (
+        <SlideShow
+          slides={TUTORIAL_SLIDES}
+          doneLabel="ゲームへ ▶"
+          onDone={goPlaying}
+        />
       )}
 
       {phase === "playing" && (
@@ -180,8 +194,14 @@ export default function Home() {
         </>
       )}
 
-      {/* slides: 終了動画のあとに説明スライド（Codex素材）。最後に結果へ */}
-      {phase === "slides" && <SlideShow onDone={() => setPhase("result")} />}
+      {/* slides: 終了動画のあとに終了スライド2枚(技術/Q&A)。最後に結果へ */}
+      {phase === "slides" && (
+        <SlideShow
+          slides={ENDING_SLIDES}
+          doneLabel="結果へ ▶"
+          onDone={() => setPhase("result")}
+        />
+      )}
 
       {phase === "result" && result && (
         <div className="relative z-10 flex flex-col items-center gap-4">

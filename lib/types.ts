@@ -4,6 +4,7 @@
 export type Phase =
   | "start"
   | "intro"
+  | "tutorial"
   | "camera"
   | "playing"
   | "ending"

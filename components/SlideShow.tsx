@@ -11,21 +11,32 @@ interface Slide {
   split?: boolean; // 左右分割背景か
 }
 
-const SLIDES: Slide[] = [
-  // 使用説明（3枚）
+// 使用説明（導入動画の後・プレイ前に表示）。
+export const TUTORIAL_SLIDES: Slide[] = [
   { bg: ["/slides/bg1.png"], svg: "/slides/slide1.svg" },
   { bg: ["/slides/bg2.png"], svg: "/slides/slide2.svg" },
   // slide3 は happy(左)/angry(右) を分割表示
   { bg: ["/slides/bg3.png", "/slides/bg4.png"], svg: "/slides/slide3.svg", split: true },
-  // 終了スライド（2枚）: 技術スタック＆こだわり / 質疑応答 Q&A
+];
+
+// 終了スライド（終了動画の後に表示）: 技術スタック＆こだわり / 質疑応答 Q&A。
+export const ENDING_SLIDES: Slide[] = [
   { bg: ["/slides/ebg1.png"], svg: "/slides/eslide1.svg" },
   { bg: ["/slides/ebg2.png"], svg: "/slides/eslide2.svg" },
 ];
 
-export function SlideShow({ onDone }: { onDone: () => void }) {
+export function SlideShow({
+  slides,
+  doneLabel = "結果へ ▶",
+  onDone,
+}: {
+  slides: Slide[];
+  doneLabel?: string;
+  onDone: () => void;
+}) {
   const [i, setI] = useState(0);
-  const slide = SLIDES[i];
-  const last = i === SLIDES.length - 1;
+  const slide = slides[i];
+  const last = i === slides.length - 1;
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900">
@@ -61,7 +72,7 @@ export function SlideShow({ onDone }: { onDone: () => void }) {
 
       {/* ページ表示 */}
       <div className="absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-2">
-        {SLIDES.map((_, idx) => (
+        {slides.map((_, idx) => (
           <span
             key={idx}
             className={`h-2 w-2 rounded-full ${idx === i ? "bg-white" : "bg-white/30"}`}
@@ -83,7 +94,7 @@ export function SlideShow({ onDone }: { onDone: () => void }) {
           className="rounded-full bg-rose-600 px-6 py-2 text-sm font-bold hover:bg-rose-500"
           onClick={() => (last ? onDone() : setI(i + 1))}
         >
-          {last ? "結果へ ▶" : "次へ ▶"}
+          {last ? doneLabel : "次へ ▶"}
         </button>
       </div>
     </div>
